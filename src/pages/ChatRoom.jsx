@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 const socket = io("http://localhost:3000");
 
 export default function ChatRoom() {
@@ -44,6 +46,21 @@ export default function ChatRoom() {
   // fungsi untuk mengirim pesan
   const sendMessage = (e) => {
     e.preventDefault();
+
+    if (inputMessage.trim().toLowerCase().startsWith("/ai")) {
+      const prompt = inputMessage.trim().substring(4);
+      if (prompt) {
+        socket.emit("/ask/ai", { prompt });
+      } else {
+        socket.emit("chat message", {
+          message: inputMessage,
+          user: localStorage.getItem("user"),
+        });
+      }
+
+      setInputMessage("");
+    }
+
     if (inputMessage.trim()) {
       socket.emit("chat message", inputMessage);
       setInputMessage("");
@@ -82,7 +99,9 @@ export default function ChatRoom() {
                 <span className="font-semibold text-gray-600">
                   {msg.id === socketId ? "You" : msg.id}
                 </span>
-                <span className="ml-2">{msg.message}</span>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.message}
+                </ReactMarkdown>
               </div>
             </div>
           ))
