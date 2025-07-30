@@ -5,7 +5,34 @@ export default function JoinRoom() {
   const [room, setRoom] = useState("");
   const [errors, setErrors] = useState({});
   const [isConnected, setIsConnected] = useState(false);
-  const socketUrl = "http://localhost:3000";
+  const [socket, setSocket] = useState(null);
+
+  useEffect(() => {
+    const newSocket = new WebSocket("ws://localhost:3000");
+    setSocket(newSocket);
+
+    newSocket.onopen = () => {
+      setIsConnected(true);
+    };
+
+    newSocket.onclose = () => {
+      setIsConnected(false);
+    };
+
+    newSocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "error") {
+        setErrors((prev) => ({
+          ...prev,
+          submit: data.message,
+        }));
+      }
+    };
+
+    return () => {
+      newSocket.close();
+    };
+  }, []);
 
   const validateForm = () => {
     const newErrors = {};
@@ -29,8 +56,8 @@ export default function JoinRoom() {
     e.preventDefault();
 
     if (validateForm()) {
-      if (socketUrl && isConnected) {
-        socketUrl.send(JSON.stringify({ type: "join", username, room }));
+      if (socket && isConnected) {
+        socket.send(JSON.stringify({ type: "join", username, room }));
       } else {
         setErrors((prev) => ({
           ...prev,
@@ -39,50 +66,6 @@ export default function JoinRoom() {
       }
     }
   };
-
-  useEffect(() => {
-    if (socketUrl) {
-      socketUrl.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "error") {
-          setErrors((prev) => ({
-            ...prev,
-            submit: data.message,
-          }));
-        }
-      };
-    }
-  }, [socketUrl]);
-
-  useEffect(() => {
-    if (isConnected) {
-      setErrors((prev) => ({
-        ...prev,
-        submit: "",
-      }));
-    }
-  }, [isConnected]);
-
-  useEffect(() => {
-    if (username || room) {
-      setErrors((prev) => ({
-        ...prev,
-        submit: "",
-      }));
-    }
-  }, [username, room]);
-
-  useEffect(() => {
-    if (socketUrl) {
-      socketUrl.onopen = () => {
-        setIsConnected(true);
-      };
-
-      socketUrl.onclose = () => {
-        setIsConnected(false);
-      };
-    }
-  }, [socketUrl]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
