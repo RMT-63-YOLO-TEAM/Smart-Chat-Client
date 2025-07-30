@@ -32,7 +32,7 @@ export default function JoinRoom() {
       if (socketRef.current && isConnected) {
         socketRef.current.emit("join", { username, room });
         socketRef.current.once("joined", () => {
-          navigate("/join");
+          navigate("/room");
         });
       } else {
         setErrors((prev) => ({

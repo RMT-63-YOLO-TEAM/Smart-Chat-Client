@@ -2,12 +2,18 @@ import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import ChatHeader from "../components/ChatHeader";
+import { useNavigate } from "react-router";
 const socket = io("http://localhost:3000");
 
 export default function ChatRoom() {
   const [socketId, setSocketId] = useState("");
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
+  const navigate = useNavigate();
+
+  const username = localStorage.getItem("user");
+  const room = localStorage.getItem("room");
 
   useEffect(() => {
     // koneksi berhasil
@@ -67,8 +73,15 @@ export default function ChatRoom() {
     }
   };
 
+  const handleLeave = () => {
+    socket.emit("leave", { username, room });
+    socket.disconnect();
+    navigate("/");
+  };
+
   return (
     <div className="p-8 max-w-xl mx-auto">
+      <ChatHeader username={username} room={room} onLeave={handleLeave} />
       <h1 className="text-3xl font-bold mb-2 text-gray-800">Chat Room</h1>
       <p className="text-sm text-gray-500 mb-6">
         Socket ID:{" "}
