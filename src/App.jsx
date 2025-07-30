@@ -1,12 +1,14 @@
-//* Jenis nya -> Event based
-//* -> Emit -> Mengirimkan request (client -> server)
-//* -> On -> Menerima request
+import { BrowserRouter, Routes, Route } from "react-router";
+import ChatRoom from "./pages/ChatRoom";
 
 function App() {
   return (
-    <div>
-      <h1>Chat App</h1>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/room" element={<ChatRoom />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
