@@ -1,38 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router";
+import { io } from "socket.io-client";
 
 export default function JoinRoom() {
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [room, setRoom] = useState("");
   const [errors, setErrors] = useState({});
   const [isConnected, setIsConnected] = useState(false);
-  const [socket, setSocket] = useState(null);
-
-  useEffect(() => {
-    const newSocket = new WebSocket("ws://localhost:3000");
-    setSocket(newSocket);
-
-    newSocket.onopen = () => {
-      setIsConnected(true);
-    };
-
-    newSocket.onclose = () => {
-      setIsConnected(false);
-    };
-
-    newSocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "error") {
-        setErrors((prev) => ({
-          ...prev,
-          submit: data.message,
-        }));
-      }
-    };
-
-    return () => {
-      newSocket.close();
-    };
-  }, []);
+  const socketRef = useRef(null);
 
   const validateForm = () => {
     const newErrors = {};
@@ -41,23 +17,23 @@ export default function JoinRoom() {
     } else if (username.length < 2) {
       newErrors.username = "Username must be at least 2 characters";
     }
-
     if (!room.trim()) {
       newErrors.room = "Room name is required";
     } else if (room.length < 3) {
       newErrors.room = "Room name must be at least 3 characters";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (validateForm()) {
-      if (socket && isConnected) {
-        socket.send(JSON.stringify({ type: "join", username, room }));
+      if (socketRef.current && isConnected) {
+        socketRef.current.emit("join", { username, room });
+        socketRef.current.once("joined", () => {
+          navigate("/join");
+        });
       } else {
         setErrors((prev) => ({
           ...prev,
@@ -66,6 +42,42 @@ export default function JoinRoom() {
       }
     }
   };
+
+  useEffect(() => {
+    socketRef.current = io("http://localhost:3000", {
+      transports: ["websocket"],
+    });
+    socketRef.current.on("connect", () => setIsConnected(true));
+    socketRef.current.on("disconnect", () => setIsConnected(false));
+    socketRef.current.on("error", (data) => {
+      setErrors((prev) => ({
+        ...prev,
+        submit: data.message,
+      }));
+    });
+
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isConnected) {
+      setErrors((prev) => ({
+        ...prev,
+        submit: "",
+      }));
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (username || room) {
+      setErrors((prev) => ({
+        ...prev,
+        submit: "",
+      }));
+    }
+  }, [username, room]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
