@@ -5,8 +5,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* <Route path="/room" element={<App />} /> */}
-        <Route path="/join" element={<ChatRoom />} />
+        <Route path="/" element={<App />} />
+        <Route path="/room" element={<ChatRoom />} />
       </Routes>
     </BrowserRouter>
   );
