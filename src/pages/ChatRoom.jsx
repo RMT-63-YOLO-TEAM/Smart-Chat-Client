@@ -26,8 +26,14 @@ export default function ChatRoom() {
     if (!socket) return;
     const handleConnect = () => setSocketId(socket.id);
     const handleWelcome = (data) => setSocketId(data.socketId);
-    const handleChatMessage = (data) =>
+    const handleChatMessage = (data) => {
       setMessages((prevMessages) => [...prevMessages, data]);
+
+      // Hide AI loading if this is an AI response
+      if (data.user === "AI" && isAiLoading) {
+        setIsAiLoading(false);
+      }
+    };
     const handleFetchMessages = (msgs) => setMessages(msgs);
     const handleDisconnect = () => setSocketId("");
     const handleOnlineUsers = (users) => setOnlineUsers(users);
@@ -40,8 +46,6 @@ export default function ChatRoom() {
       setOnlineUsers((prev) => prev.filter((u) => u !== username));
     };
     const handleAiLoading = (loading) => setIsAiLoading(loading);
-    // Hide loading when AI response is received
-    const handleAiResponse = (data) => setIsAiLoading(false);
 
     if (socket.connected && socket.id) {
       setSocketId(socket.id);
@@ -55,7 +59,7 @@ export default function ChatRoom() {
     socket.on("user-joined", handleUserJoined);
     socket.on("user-left", handleUserLeft);
     socket.on("/ai/loading", handleAiLoading);
-    socket.on("chat message", handleAiResponse); // AI response comes as chat message
+
     // Typing indicator
     socket.on("typing", ({ username: typingName }) => {
       if (typingName !== username) setTypingUser(typingName);
@@ -63,6 +67,7 @@ export default function ChatRoom() {
     socket.on("stop-typing", ({ username: typingName }) => {
       if (typingName !== username) setTypingUser("");
     });
+
     return () => {
       socket.off("connect", handleConnect);
       socket.off("welcome", handleWelcome);
@@ -73,11 +78,10 @@ export default function ChatRoom() {
       socket.off("user-joined", handleUserJoined);
       socket.off("user-left", handleUserLeft);
       socket.off("/ai/loading", handleAiLoading);
-      socket.off("chat message", handleAiResponse);
       socket.off("typing");
       socket.off("stop-typing");
     };
-  }, [socket, setMessages]);
+  }, [socket, setMessages, isAiLoading, username]);
 
   // Enhanced input change handler for AI mode
   const handleInputChange = (e) => {
@@ -101,17 +105,22 @@ export default function ChatRoom() {
     if (!socket) return;
     const trimmed = inputMessage.trim();
     if (!trimmed) return;
+
     if (trimmed.toLowerCase().startsWith("/ai")) {
       const prompt = trimmed.replace(/^\/ai\s*/i, "");
       if (prompt) {
+        // Kirim pesan AI command sebagai chat message biasa agar terlihat semua orang
+        socket.emit("chat message", {
+          message: inputMessage,
+          user: username,
+          room,
+        });
+
+        // Kemudian kirim request ke AI
         setIsAiLoading(true);
-        // Show user's command in chat immediately
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { message: inputMessage, user: username, room },
-        ]);
         socket.emit("/ask/ai", { prompt, user: username, room });
       } else {
+        // Jika hanya "/ai" tanpa pertanyaan, kirim sebagai pesan biasa
         socket.emit("chat message", {
           message: inputMessage,
           user: username,
@@ -119,12 +128,14 @@ export default function ChatRoom() {
         });
       }
     } else {
+      // Pesan biasa
       socket.emit("chat message", {
         message: inputMessage,
         user: username,
         room,
       });
     }
+
     setInputMessage("");
     setIsAiMode(false);
     if (socket) {
