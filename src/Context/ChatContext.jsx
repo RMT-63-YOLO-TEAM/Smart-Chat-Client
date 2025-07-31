@@ -26,8 +26,9 @@ export function ChatProvider({ children }) {
 
   // Inisialisasi socket hanya sekali
   if (!socketRef.current) {
-    socketRef.current = io("http://localhost:3000", {
+    socketRef.current = io("https://api.gnaleroon.com", {
       transports: ["websocket"],
+      secure: true,
     });
     socketRef.current.on("connect", () => setIsConnected(true));
     socketRef.current.on("disconnect", () => setIsConnected(false));

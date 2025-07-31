@@ -146,7 +146,7 @@ export default function ChatRoom() {
       <header className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 py-4 border-b bg-white shadow-sm w-full">
         <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <span className="text-2xl sm:text-3xl font-extrabold text-blue-700 drop-shadow-sm tracking-tight font-sans">
-            vite <span className="text-purple-600">+ react</span>
+            Smart <span className="text-purple-600">Chat</span>
           </span>
           <span className="text-base text-gray-600 font-medium">
             Selamat datang,{" "}
