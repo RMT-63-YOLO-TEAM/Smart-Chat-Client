@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function ChatHeader({ username, room, onLeave }) {
   return (
     <div className="flex items-center justify-between bg-blue-600 text-white px-4 py-3 rounded-t-lg shadow">

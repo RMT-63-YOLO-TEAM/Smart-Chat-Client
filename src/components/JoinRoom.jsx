@@ -1,14 +1,19 @@
-import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { io } from "socket.io-client";
+import { useEffect } from "react";
+import { useChat } from "../context/ChatContext";
 
 export default function JoinRoom() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
-  const [room, setRoom] = useState("");
-  const [errors, setErrors] = useState({});
-  const [isConnected, setIsConnected] = useState(false);
-  const socketRef = useRef(null);
+  const {
+    username,
+    setUsername,
+    room,
+    setRoom,
+    errors,
+    setErrors,
+    isConnected,
+    socket,
+  } = useChat();
 
   const validateForm = () => {
     const newErrors = {};
@@ -29,9 +34,9 @@ export default function JoinRoom() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      if (socketRef.current && isConnected) {
-        socketRef.current.emit("join", { username, room });
-        socketRef.current.once("joined", () => {
+      if (socket && isConnected) {
+        socket.emit("join", { username, room });
+        socket.once("joined", () => {
           navigate("/room");
         });
       } else {
@@ -43,23 +48,7 @@ export default function JoinRoom() {
     }
   };
 
-  useEffect(() => {
-    socketRef.current = io("http://localhost:3000", {
-      transports: ["websocket"],
-    });
-    socketRef.current.on("connect", () => setIsConnected(true));
-    socketRef.current.on("disconnect", () => setIsConnected(false));
-    socketRef.current.on("error", (data) => {
-      setErrors((prev) => ({
-        ...prev,
-        submit: data.message,
-      }));
-    });
-
-    return () => {
-      if (socketRef.current) socketRef.current.disconnect();
-    };
-  }, []);
+  // Socket sudah diinisialisasi di context
 
   useEffect(() => {
     if (isConnected) {
@@ -69,7 +58,6 @@ export default function JoinRoom() {
       }));
     }
   }, [isConnected]);
-
   useEffect(() => {
     if (username || room) {
       setErrors((prev) => ({
@@ -80,15 +68,19 @@ export default function JoinRoom() {
   }, [username, room]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex justify-center items-center p-0 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-4 sm:p-8 flex flex-col justify-center min-h-[80vh]">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-4">💬</div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">SmartChat</h1>
-          <p className="text-gray-600">Real-time chat with AI assistant</p>
+          <div className="text-3xl sm:text-4xl mb-4">💬</div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            SmartChat
+          </h1>
+          <p className="text-gray-600 text-sm sm:text-base">
+            Real-time chat with AI assistant
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
             <label
               htmlFor="username"
@@ -101,9 +93,9 @@ export default function JoinRoom() {
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                 errors.username ? "border-red-500" : "border-gray-300"
-              }`}
+              } text-sm sm:text-base`}
               placeholder="Enter your username"
               maxLength={20}
             />
@@ -124,9 +116,9 @@ export default function JoinRoom() {
               id="room"
               value={room}
               onChange={(e) => setRoom(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                 errors.room ? "border-red-500" : "border-gray-300"
-              }`}
+              } text-sm sm:text-base`}
               placeholder="Enter room name"
               maxLength={30}
             />
@@ -136,7 +128,7 @@ export default function JoinRoom() {
           </div>
 
           {errors.submit && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2 sm:p-3">
               <p className="text-sm text-red-600">{errors.submit}</p>
             </div>
           )}
@@ -144,7 +136,7 @@ export default function JoinRoom() {
           <button
             type="submit"
             disabled={!isConnected}
-            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+            className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium transition-colors text-sm sm:text-base ${
               isConnected
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -154,10 +146,10 @@ export default function JoinRoom() {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-gray-200">
+        <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-3">Features:</p>
-            <div className="flex flex-wrap justify-center gap-2 text-xs">
+            <p className="text-sm text-gray-600 mb-2 sm:mb-3">Features:</p>
+            <div className="flex flex-wrap justify-center gap-1 sm:gap-2 text-xs">
               <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
                 Real-time Chat
               </span>
@@ -171,7 +163,7 @@ export default function JoinRoom() {
           </div>
         </div>
 
-        <div className="mt-4 text-center">
+        <div className="mt-3 sm:mt-4 text-center">
           <div
             className={`inline-flex items-center text-sm ${
               isConnected ? "text-green-600" : "text-red-600"
